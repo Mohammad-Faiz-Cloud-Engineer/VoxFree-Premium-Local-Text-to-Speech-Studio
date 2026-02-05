@@ -4,19 +4,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional text-to-speech application with advanced voice synthesis capabilities">
+    <meta name="author" content="VoxFree">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Security Headers -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
     <title>VoxFree - Premium Text-to-Speech Studio</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
+    
+    <!-- Critical CSS - Inline to prevent FOUC -->
+    <style>
+        /* Prevent FOUC */
+        html { 
+            visibility: hidden; 
+            opacity: 0; 
+        }
+        html.fonts-loaded { 
+            visibility: visible; 
+            opacity: 1; 
+            transition: opacity 0.3s ease; 
+        }
+        
+        /* Loading spinner */
+        .app-loading-spinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(99, 102, 241, 0.2);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 9999;
+        }
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        html.fonts-loaded .app-loading-spinner { 
+            display: none; 
+        }
+    </style>
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
-
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Tailwind configuration
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -27,19 +68,47 @@
                         dark: '#0f172a',
                     },
                     fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
+                        sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
                     }
                 }
             }
+        };
+    </script>
+    
+    <!-- Google Fonts - Optimized loading -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome - Optimized loading -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Font loading detection -->
+    <script>
+        // Detect when fonts are loaded
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(function() {
+                document.documentElement.classList.add('fonts-loaded');
+            });
+        } else {
+            // Fallback for browsers without Font Loading API
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    document.documentElement.classList.add('fonts-loaded');
+                }, 100);
+            });
         }
     </script>
 </head>
 
 <body class="flex items-center justify-center p-4 sm:p-8">
+    
+    <!-- Loading spinner -->
+    <div class="app-loading-spinner"></div>
 
     <!-- Main Container -->
-    <div
-        class="glass-panel w-full max-w-5xl rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-2xl relative animate-fade-in-up">
+    <div id="app-container" class="glass-panel w-full max-w-5xl rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-2xl relative">
 
         <!-- Sidebar / Controls Panel -->
         <div class="w-full md:w-80 bg-black/20 p-6 flex flex-col gap-6 border-r border-white/5">
@@ -62,19 +131,21 @@
 
                 <!-- Search -->
                 <div class="relative">
-                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                    <input type="text" id="voiceSearch" placeholder="Search voices..."
-                        class="glass-input w-full rounded-xl py-2 pl-9 pr-3 text-sm text-slate-200 placeholder-slate-500">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm" aria-hidden="true"></i>
+                    <input type="text" id="voiceSearch" placeholder="Search voices..." 
+                        aria-label="Search available voices"
+                        class="glass-input w-full rounded-xl py-2 pl-9 pr-3 text-sm text-slate-200 placeholder-slate-500"
+                        autocomplete="off">
                 </div>
 
                 <!-- Dropdown -->
                 <div class="relative">
-                    <select id="voiceSelect"
+                    <select id="voiceSelect" 
+                        aria-label="Select voice for speech synthesis"
                         class="glass-input w-full rounded-xl py-2 px-3 text-sm text-slate-200 appearance-none cursor-pointer">
                         <option>Loading voices...</option>
                     </select>
-                    <i
-                        class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></i>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none" aria-hidden="true"></i>
                 </div>
 
                 <!-- Detected OS Tag -->
@@ -92,30 +163,33 @@
                 <!-- Rate -->
                 <div class="space-y-2">
                     <div class="flex justify-between text-xs text-slate-400">
-                        <span>Speed</span>
-                        <span id="rateValue" class="text-white font-mono">1.0x</span>
+                        <label for="rate">Speed</label>
+                        <span id="rateValue" class="text-white font-mono" aria-live="polite">1.0x</span>
                     </div>
                     <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1"
+                        aria-label="Speech rate control"
                         class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
                 </div>
 
                 <!-- Pitch -->
                 <div class="space-y-2">
                     <div class="flex justify-between text-xs text-slate-400">
-                        <span>Pitch</span>
-                        <span id="pitchValue" class="text-white font-mono">1.0</span>
+                        <label for="pitch">Pitch</label>
+                        <span id="pitchValue" class="text-white font-mono" aria-live="polite">1.0</span>
                     </div>
                     <input type="range" id="pitch" min="0.5" max="2" value="1" step="0.1"
+                        aria-label="Speech pitch control"
                         class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
                 </div>
 
                 <!-- Volume -->
                 <div class="space-y-2">
                     <div class="flex justify-between text-xs text-slate-400">
-                        <span>Volume</span>
-                        <span id="volumeValue" class="text-white font-mono">100%</span>
+                        <label for="volume">Volume</label>
+                        <span id="volumeValue" class="text-white font-mono" aria-live="polite">100%</span>
                     </div>
                     <input type="range" id="volume" min="0" max="1" value="1" step="0.1"
+                        aria-label="Speech volume control"
                         class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
                 </div>
             </div>
@@ -127,16 +201,20 @@
 
             <!-- Header Actions -->
             <div class="h-16 flex items-center justify-end px-6 gap-3 border-b border-white/5">
-                <button id="themeToggle"
+                <button id="themeToggle" 
+                    aria-label="Toggle dark/light theme"
                     class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-colors">
-                    <i class="fa-solid fa-moon"></i>
+                    <i class="fa-solid fa-moon" aria-hidden="true"></i>
                 </button>
             </div>
 
             <!-- Text Area -->
             <div class="flex-1 p-6 flex flex-col">
                 <div class="flex-1 relative group">
+                    <label for="textInput" class="sr-only">Enter text to convert to speech</label>
                     <textarea id="textInput"
+                        aria-label="Text input for speech synthesis"
+                        maxlength="5000"
                         class="w-full h-full bg-transparent border-none resize-none focus:ring-0 text-xl md:text-2xl text-slate-200 placeholder-slate-600 font-light leading-relaxed p-0"
                         placeholder="Type something amazing here to bring it to life..."></textarea>
 
@@ -144,7 +222,8 @@
                     <div
                         class="absolute bottom-2 right-2 flex items-center gap-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                         <span id="charCount"
-                            class="text-xs text-slate-500 bg-black/40 px-2 py-1 rounded-md backdrop-blur">0 chars</span>
+                            class="text-xs text-slate-500 bg-black/40 px-2 py-1 rounded-md backdrop-blur" 
+                            aria-live="polite">0 / 5000 chars</span>
                     </div>
                 </div>
             </div>
@@ -155,37 +234,40 @@
 
                 <!-- Status / Waveform Placeholder -->
                 <div class="hidden md:flex items-center gap-3">
-                    <div id="visualizer" class="flex gap-1 h-8 items-end opacity-50">
-                        <!-- Dynamic bars will be added here via JS -->
+                    <div id="visualizer" class="flex gap-1 h-8 items-end opacity-50" aria-hidden="true">
                         <div class="w-1 bg-primary h-2 rounded-full animate-bounce"></div>
                         <div class="w-1 bg-primary h-4 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
                         <div class="w-1 bg-primary h-6 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                         <div class="w-1 bg-primary h-3 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
                     </div>
-                    <span id="statusText" class="text-xs text-slate-400 font-medium">Ready to speak</span>
+                    <span id="statusText" class="text-xs text-slate-400 font-medium" role="status" aria-live="polite">Ready to speak</span>
                 </div>
 
                 <!-- Main Buttons -->
                 <div class="flex items-center gap-4 w-full md:w-auto justify-end">
 
-                    <!-- Download Group -->
                     <!-- Download Button -->
                     <button id="downloadBtn"
-                        class="h-12 w-12 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl flex items-center justify-center transition-all border border-white/5 shadow-lg"
-                        title="Download MP3">
-                        <i class="fa-solid fa-download"></i>
+                        aria-label="Download audio as MP3"
+                        title="Download MP3"
+                        class="h-12 w-12 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl flex items-center justify-center transition-all border border-white/5 shadow-lg">
+                        <i class="fa-solid fa-download" aria-hidden="true"></i>
                     </button>
 
                     <!-- Stop -->
                     <button id="stopBtn"
+                        aria-label="Stop speech synthesis"
+                        title="Stop (Esc)"
                         class="h-12 w-12 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center transition-all border border-red-500/20">
-                        <i class="fa-solid fa-stop"></i>
+                        <i class="fa-solid fa-stop" aria-hidden="true"></i>
                     </button>
 
                     <!-- Speak -->
                     <button id="speakBtn"
+                        aria-label="Start speech synthesis"
+                        title="Speak (Ctrl+Enter)"
                         class="h-12 px-8 bg-gradient-to-r from-primary to-secondary hover:brightness-110 text-white font-semibold rounded-2xl shadow-lg shadow-primary/25 flex items-center gap-2 transition-transform active:scale-95">
-                        <i class="fa-solid fa-play"></i>
+                        <i class="fa-solid fa-play" aria-hidden="true"></i>
                         <span>Speak</span>
                     </button>
 
@@ -195,13 +277,16 @@
         </div>
     </div>
 
-    <!-- Hidden audio element for export playback -->
-    <audio id="audioPlayback" class="hidden" controls></audio>
-
-
-
     <!-- App Logic -->
     <script src="app.js"></script>
+    
+    <!-- Performance monitoring -->
+    <noscript>
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e293b; padding: 2rem; border-radius: 1rem; color: white; text-align: center; z-index: 10000;">
+            <h2 style="margin: 0 0 1rem 0; font-size: 1.5rem;">JavaScript Required</h2>
+            <p style="margin: 0;">This application requires JavaScript to function. Please enable JavaScript in your browser settings.</p>
+        </div>
+    </noscript>
 </body>
 
 </html>
